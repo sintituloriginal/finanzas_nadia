@@ -10,6 +10,12 @@ import '@/styles/main.scss'
 import App from './App.vue'
 import router from './router'
 
+const THEME_STORAGE_KEY = 'mi_presupuesto_theme'
+const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+const isDark = savedTheme === 'dark'
+
+Dark.set(isDark)
+
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -19,6 +25,9 @@ app.use(Quasar, {
     Dialog,
     Notify,
     Dark
+  },
+  config: {
+    dark: isDark
   },
   lang: langEs
 })

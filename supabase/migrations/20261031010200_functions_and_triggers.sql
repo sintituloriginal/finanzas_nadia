@@ -67,8 +67,8 @@ BEGIN
   END IF;
 
   -- Crear perfil si no existe
-  INSERT INTO public.profiles (id, full_name, currency, timezone)
-  VALUES (p_user_id, 'Mi Perfil Financiero', 'CLP', 'America/Santiago')
+  INSERT INTO public.profiles (id, full_name, currency, timezone, theme_preference)
+  VALUES (p_user_id, 'Mi Perfil Financiero', 'CLP', 'America/Santiago', 'light')
   ON CONFLICT (id) DO NOTHING;
 
   -- Crear cuentas predeterminadas

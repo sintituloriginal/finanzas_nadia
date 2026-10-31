@@ -285,7 +285,11 @@ const userInitial = computed(() => {
 function toggleDarkMode() {
   const next = !$q.dark.isActive
   $q.dark.set(next)
-  authStore.updateProfileSettings({ theme_preference: next ? 'dark' : 'light' })
+  const themePref = next ? 'dark' : 'light'
+  localStorage.setItem('mi_presupuesto_theme', themePref)
+  if (authStore.isAuthenticated) {
+    authStore.updateProfileSettings({ theme_preference: themePref })
+  }
 }
 
 async function handleLogout() {

@@ -7,6 +7,7 @@ import type { Profile, ThemePreference } from '@/types/finance'
 
 const LOCAL_SESSION_KEY = 'mi_presupuesto_local_session_v1'
 const LOCAL_PROFILE_KEY = 'mi_presupuesto_local_profile_v1'
+export const THEME_STORAGE_KEY = 'mi_presupuesto_theme'
 
 export interface AuthUser {
   id: string
@@ -40,13 +41,24 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => Boolean(user.value))
   const isCloudMode = computed(() => isSupabaseConfigured)
 
-  function applyTheme(pref: ThemePreference) {
+  function applyTheme(pref?: ThemePreference) {
     if (pref === 'dark') {
       Dark.set(true)
-    } else if (pref === 'light') {
+      localStorage.setItem(THEME_STORAGE_KEY, 'dark')
+      return
+    }
+    if (pref === 'light') {
       Dark.set(false)
+      localStorage.setItem(THEME_STORAGE_KEY, 'light')
+      return
+    }
+
+    const saved = localStorage.getItem(THEME_STORAGE_KEY)
+    if (saved === 'dark') {
+      Dark.set(true)
     } else {
-      Dark.set('auto')
+      // Light Mode por defecto absoluto
+      Dark.set(false)
     }
   }
 
@@ -63,7 +75,11 @@ export const useAuthStore = defineStore('auth', () => {
       if (data) {
         const typedProfile = data as unknown as Profile
         profile.value = typedProfile
-        applyTheme(typedProfile.theme_preference)
+        if (typedProfile.theme_preference === 'dark' || typedProfile.theme_preference === 'light') {
+          applyTheme(typedProfile.theme_preference)
+        } else {
+          applyTheme()
+        }
         return
       }
     }
@@ -74,7 +90,11 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         const parsed = JSON.parse(raw) as Profile
         profile.value = parsed
-        applyTheme(parsed.theme_preference)
+        if (parsed.theme_preference === 'dark' || parsed.theme_preference === 'light') {
+          applyTheme(parsed.theme_preference)
+        } else {
+          applyTheme()
+        }
         return
       } catch {
         // continuar con seed
@@ -90,6 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (initialized.value) return
     loading.value = true
     authError.value = null
+    applyTheme()
 
     try {
       if (isSupabaseConfigured && supabase) {

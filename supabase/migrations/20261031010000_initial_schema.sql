@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT NOT NULL DEFAULT 'Usuario',
   currency TEXT NOT NULL DEFAULT 'CLP' CHECK (currency = 'CLP'),
   timezone TEXT NOT NULL DEFAULT 'America/Santiago',
-  theme_preference TEXT NOT NULL DEFAULT 'system' CHECK (theme_preference IN ('light', 'dark', 'system')),
+  theme_preference TEXT NOT NULL DEFAULT 'light' CHECK (theme_preference IN ('light', 'dark', 'system')),
   default_account_id UUID NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -10,6 +10,28 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('mi_presupuesto_theme');
+          if (t === 'dark') {
+            document.documentElement.classList.add('dark');
+            if (document.body) {
+              document.body.classList.add('body--dark');
+            } else {
+              document.addEventListener('DOMContentLoaded', function () {
+                document.body.classList.add('body--dark');
+              });
+            }
+          } else {
+            document.documentElement.classList.remove('dark');
+            if (document.body) {
+              document.body.classList.remove('body--dark');
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

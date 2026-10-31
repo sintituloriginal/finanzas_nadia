@@ -11,8 +11,8 @@ describe('Seguridad Row Level Security (RLS) — Aislamiento entre dos usuarios 
   const USER_A = '11111111-1111-4111-8111-111111111111'
   const USER_B = '22222222-2222-4222-8222-222222222222'
 
-  it('verifica que 002_rls_policies.sql habilita y fuerza RLS en las 7 tablas privadas', () => {
-    const sqlPath = resolve(process.cwd(), 'supabase/migrations/002_rls_policies.sql')
+  it('verifica que las políticas RLS habilitan y fuerzan RLS en las 7 tablas privadas', () => {
+    const sqlPath = resolve(process.cwd(), 'supabase/migrations/20261031010100_rls_policies.sql')
     const sql = readFileSync(sqlPath, 'utf-8')
 
     const requiredTables = [

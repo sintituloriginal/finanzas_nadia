@@ -35,9 +35,9 @@
                 emit-value
                 map-options
                 :options="[
-                  { label: 'Automático (Según el sistema operativo)', value: 'system' },
-                  { label: 'Modo Claro Refinado', value: 'light' },
-                  { label: 'Modo Oscuro Fintech', value: 'dark' }
+                  { label: 'Modo Claro (Predeterminado)', value: 'light' },
+                  { label: 'Modo Oscuro Fintech', value: 'dark' },
+                  { label: 'Automático (Según el sistema operativo)', value: 'system' }
                 ]"
               />
             </div>

@@ -474,7 +474,7 @@ export function createInitialSeedData(userId = DEMO_USER_ID): {
     full_name: 'Usuario Mi Presupuesto',
     currency: 'CLP',
     timezone: 'America/Santiago',
-    theme_preference: 'system',
+    theme_preference: 'light',
     default_account_id: 'acc-checking-1',
     created_at: now,
     updated_at: now
