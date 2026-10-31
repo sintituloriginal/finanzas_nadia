@@ -120,4 +120,3 @@ Diseñada específicamente para **Chile**:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
 4. Haz clic en **Deploy**. El archivo `vercel.json` ya incluye la regla de reescritura SPA (`/(.*) -> /index.html`) para que Vue Router funcione al recargar cualquier ruta.
-
