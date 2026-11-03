@@ -90,3 +90,57 @@ export function getMonthName(month: number): string {
   return MONTHS_ES.find((m) => m.value === month)?.label ?? ''
 }
 
+/**
+ * Formatea un valor monetario en notación compacta para ejes y pantallas pequeñas.
+ * Ejemplos:
+ * 2500000 -> "2,5M"
+ * 2000000 -> "2M"
+ * 500000  -> "500k"
+ * 0       -> "0"
+ * -1500000 -> "-1,5M"
+ */
+export function formatCompactCLP(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || !Number.isFinite(Number(amount))) return '0'
+  const val = Math.round(Number(amount))
+  if (val === 0) return '0'
+  const abs = Math.abs(val)
+  const sign = val < 0 ? '-' : ''
+
+  if (abs >= 1_000_000) {
+    const millions = abs / 1_000_000
+    const str = millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1).replace('.', ',')
+    return `${sign}${str}M`
+  }
+  if (abs >= 1_000) {
+    const thousands = abs / 1_000
+    const str = thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1).replace('.', ',')
+    return `${sign}${str}k`
+  }
+  return `${sign}${abs}`
+}
+
+/**
+ * Extrae solo los dígitos numéricos enteros de una cadena ingresada por el usuario.
+ * Retorna null si está vacía o no contiene dígitos.
+ * Ej: "2.500.000" -> 2500000, "abc" -> null, "" -> null
+ */
+export function parseCLPInput(text: string | null | undefined): number | null {
+  if (text === null || text === undefined) return null
+  const cleaned = String(text).replace(/\D/g, '')
+  if (!cleaned) return null
+  const num = parseInt(cleaned, 10)
+  return Number.isFinite(num) ? num : null
+}
+
+/**
+ * Formatea un número entero con separadores de miles de puntos para inputs monetarios CLP.
+ * Ej: 2500000 -> "2.500.000", 1000 -> "1.000", null -> ""
+ */
+export function formatCLPInput(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || !Number.isFinite(Number(amount))) {
+    return ''
+  }
+  const safe = Math.round(Math.abs(Number(amount)))
+  return safe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+

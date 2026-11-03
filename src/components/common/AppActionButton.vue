@@ -12,7 +12,8 @@
     :disable="disable"
     :size="size"
     :to="to"
-    class="rounded-btn"
+    class="app-action-btn rounded-btn"
+    :class="`app-action-btn--${variant}`"
     @click="$emit('click', $event)"
   >
     <slot />

@@ -28,7 +28,7 @@
       </div>
 
       <div
-        class="text-h5 text-weight-bolder font-mono q-my-xs"
+        class="text-weight-bolder font-mono q-my-xs stat-number"
         :class="featured ? 'text-white' : valueClass"
       >
         {{ value }}
@@ -68,6 +68,15 @@ defineProps<{
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+.stat-number {
+  font-size: clamp(1.2rem, 4.5vw, 1.5rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 </style>
 

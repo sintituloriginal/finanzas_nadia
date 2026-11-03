@@ -8,7 +8,12 @@ import {
   generateTransactionsCSV,
   getBudgetStatus
 } from '@/utils/finance'
-import { formatCLP, formatDateCL } from '@/utils/format'
+import {
+  formatCLP,
+  formatCLPInput,
+  formatDateCL,
+  parseCLPInput
+} from '@/utils/format'
 import type {
   Account,
   Budget,
@@ -356,6 +361,42 @@ describe('Motor Financiero — Reglas Contables en CLP', () => {
     const metrics = calculatePeriodMetrics(transactions, [], [], { month: 10, year: 2026 })
     expect(metrics.expenses).toBe(0)
     expect(metrics.pendingExpenses).toBe(95000)
+  })
+
+  it('formatea y parsea montos CLP con puntos de miles para inputs monetarios', () => {
+    // Formateo visual
+    expect(formatCLPInput(1000)).toBe('1.000')
+    expect(formatCLPInput(25000)).toBe('25.000')
+    expect(formatCLPInput(150000)).toBe('150.000')
+    expect(formatCLPInput(1250000)).toBe('1.250.000')
+    expect(formatCLPInput(2500000)).toBe('2.500.000')
+    expect(formatCLPInput(0)).toBe('0')
+    expect(formatCLPInput(null)).toBe('')
+    expect(formatCLPInput(undefined)).toBe('')
+
+    // Parseo numérico limpio hacia la lógica financiera
+    expect(parseCLPInput('1.000')).toBe(1000)
+    expect(parseCLPInput('25.000')).toBe(25000)
+    expect(parseCLPInput('150.000')).toBe(150000)
+    expect(parseCLPInput('1.250.000')).toBe(1250000)
+    expect(parseCLPInput('2.500.000')).toBe(2500000)
+    expect(parseCLPInput('0')).toBe(0)
+    expect(parseCLPInput('')).toBeNull()
+    expect(parseCLPInput(null)).toBeNull()
+    expect(parseCLPInput(undefined)).toBeNull()
+
+    // Rechazo de caracteres no numéricos y símbolos
+    expect(parseCLPInput('$ 2.500.000 CLP')).toBe(2500000)
+    expect(parseCLPInput('$150.000')).toBe(150000)
+    expect(parseCLPInput('abc-xyz')).toBeNull()
+
+    // Cifras grandes sin pérdida de precisión numérica
+    expect(parseCLPInput('125.800.500')).toBe(125800500)
+    expect(formatCLPInput(125800500)).toBe('125.800.500')
+
+    // Formateo de importes negativos para visualización
+    expect(formatCLP(-150000)).toContain('150.000')
+    expect(formatCLP(-150000)).toContain('-')
   })
 
   it('formatea CLP, fechas DD/MM/YYYY y exporta CSV con UTF-8 BOM para Excel Chile', () => {

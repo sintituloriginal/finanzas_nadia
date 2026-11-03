@@ -23,11 +23,11 @@
 
     <!-- Nota contable elegante -->
     <div class="fintech-card q-pa-md q-mb-lg row items-center justify-between q-col-gutter-sm">
-      <div class="col-12 col-md-auto row items-center no-wrap">
-        <div class="note-badge q-mr-md">
+      <div class="col-12 col-md-auto row items-center no-wrap min-w-0">
+        <div class="note-badge q-mr-md shrink-0">
           <q-icon name="account_balance_wallet" size="20px" color="primary" />
         </div>
-        <div class="text-body2 text-secondary-ink">
+        <div class="text-body2 text-secondary-ink min-w-0">
           El <strong>Balance Neto del Mes</strong> mide el flujo de {{ periodTitle }} (Ingresos menos Egresos).
           Tu <strong>Saldo Total Disponible en Cuentas</strong> es
           <span class="font-mono text-weight-bolder text-primary">{{ formatCLP(financeStore.totalNetWorth) }}</span>.
@@ -319,6 +319,7 @@ import { useFinanceStore } from '@/stores/finance'
 import { isDateInPeriod } from '@/utils/finance'
 import {
   formatCLP,
+  formatCompactCLP,
   formatDateCL,
   formatPercentage,
   getMonthName,
@@ -504,56 +505,82 @@ const chartSplitLineColor = computed(() =>
 const monthlyTrendOption = computed(() => ({
   tooltip: {
     trigger: 'axis',
+    confine: true,
     backgroundColor: $q.dark.isActive ? '#1e293b' : '#ffffff',
     borderColor: $q.dark.isActive ? '#334155' : '#e2e8f0',
-    textStyle: { color: $q.dark.isActive ? '#f8fafc' : '#0f172a' }
+    textStyle: { color: $q.dark.isActive ? '#f8fafc' : '#0f172a', fontSize: 12 },
+    formatter: (params: any) => {
+      if (!Array.isArray(params) || params.length === 0) return ''
+      const title = params[0].axisValueLabel || ''
+      let html = `<div style="font-weight:700;margin-bottom:4px;">${title}</div>`
+      for (const p of params) {
+        const val = typeof p.value === 'number' ? formatCLP(p.value) : p.value
+        html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0;">
+          <span>${p.marker} ${p.seriesName}</span>
+          <strong style="font-family:monospace;">${val}</strong>
+        </div>`
+      }
+      return html
+    }
   },
   legend: {
     bottom: 0,
-    textStyle: { color: chartTextColor.value },
+    left: 'center',
+    itemWidth: 14,
+    itemHeight: 10,
+    textStyle: { color: chartTextColor.value, fontSize: 11 },
     data: ['Ingresos', 'Egresos', 'Balance Neto']
   },
   grid: {
-    top: 16,
-    left: 12,
-    right: 12,
-    bottom: 36,
+    top: 18,
+    left: 8,
+    right: 8,
+    bottom: 40,
     containLabel: true
   },
   xAxis: {
     type: 'category',
     data: lastSixMonthsSeries.value.labels,
     axisLine: { lineStyle: { color: chartSplitLineColor.value } },
-    axisLabel: { color: chartTextColor.value }
+    axisLabel: {
+      color: chartTextColor.value,
+      fontSize: 11,
+      hideOverlap: true
+    }
   },
   yAxis: {
     type: 'value',
     splitLine: { lineStyle: { color: chartSplitLineColor.value } },
-    axisLabel: { color: chartTextColor.value }
+    axisLabel: {
+      color: chartTextColor.value,
+      fontSize: 11,
+      formatter: (val: number) => formatCompactCLP(val)
+    }
   },
   series: [
     {
       name: 'Ingresos',
       type: 'bar',
-      barMaxWidth: 22,
+      barMaxWidth: 16,
+      barGap: '20%',
       data: lastSixMonthsSeries.value.incomes,
-      itemStyle: { color: '#10B981', borderRadius: [6, 6, 0, 0] }
+      itemStyle: { color: '#10B981', borderRadius: [4, 4, 0, 0] }
     },
     {
       name: 'Egresos',
       type: 'bar',
-      barMaxWidth: 22,
+      barMaxWidth: 16,
       data: lastSixMonthsSeries.value.expenses,
-      itemStyle: { color: '#EF4444', borderRadius: [6, 6, 0, 0] }
+      itemStyle: { color: '#EF4444', borderRadius: [4, 4, 0, 0] }
     },
     {
       name: 'Balance Neto',
       type: 'line',
       smooth: true,
-      symbolSize: 7,
+      symbolSize: 6,
       data: lastSixMonthsSeries.value.balances,
       itemStyle: { color: '#0D9488' },
-      lineStyle: { width: 3 }
+      lineStyle: { width: 3, color: '#0D9488' }
     }
   ]
 }))

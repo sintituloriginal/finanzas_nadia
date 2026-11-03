@@ -163,7 +163,7 @@
         :subtitle="`Período activo: ${periodLabel}`"
         icon="pie_chart"
       >
-        <q-form @submit.prevent="saveForm" class="q-gutter-y-md">
+        <q-form @submit.prevent="saveForm" class="q-gutter-y-sm">
           <div>
             <label class="field-label">Categoría de gasto *</label>
             <q-select
@@ -175,23 +175,30 @@
               map-options
               outlined
               dense
+              options-dense
               :rules="[(val) => Boolean(val) || 'Selecciona una categoría']"
             />
           </div>
           <div>
             <label class="field-label">Monto presupuestado mensual (CLP) *</label>
-            <q-input
-              v-model.number="form.amount"
-              type="number"
-              outlined
-              prefix="$"
-              input-class="text-h6 text-weight-bold font-mono"
+            <AppCurrencyInput
+              v-model="form.amount"
               :rules="[(val) => Number(val) > 0 || 'Ingresa un monto mayor a $0']"
             />
           </div>
-          <div class="row justify-end q-gutter-sm q-pt-sm">
-            <AppActionButton variant="ghost" label="Cancelar" v-close-popup />
-            <AppActionButton type="submit" icon="check" label="Guardar presupuesto" />
+          <div class="modal-footer q-pt-xs">
+            <AppActionButton
+              variant="ghost"
+              label="Cancelar"
+              v-close-popup
+              class="modal-btn modal-btn-cancel"
+            />
+            <AppActionButton
+              type="submit"
+              icon="check"
+              label="Guardar presupuesto"
+              class="modal-btn modal-btn-save"
+            />
           </div>
         </q-form>
       </AppFormCard>
@@ -210,6 +217,7 @@ import AppEmptyState from '@/components/common/AppEmptyState.vue'
 import AppFormCard from '@/components/common/AppFormCard.vue'
 import AppActionButton from '@/components/common/AppActionButton.vue'
 import AppStatusBadge from '@/components/common/AppStatusBadge.vue'
+import AppCurrencyInput from '@/components/common/AppCurrencyInput.vue'
 import type { BudgetStatus, BudgetSummary } from '@/types/finance'
 
 const $q = useQuasar()
@@ -312,6 +320,44 @@ async function handleCopyNextMonth() {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 5px;
+  margin-bottom: 4px;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+:deep(.modal-btn) {
+  height: 40px !important;
+  min-height: 40px !important;
+  border-radius: 10px !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+}
+
+:deep(.modal-btn .q-icon) {
+  font-size: 16px !important;
+  margin-right: 4px !important;
+}
+
+:deep(.modal-btn-cancel) {
+  padding: 0 12px !important;
+  color: var(--text-secondary) !important;
+}
+
+:deep(.modal-btn-save) {
+  padding: 0 16px !important;
+}
+
+@media (max-width: 380px) {
+  .modal-footer {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+  }
 }
 </style>

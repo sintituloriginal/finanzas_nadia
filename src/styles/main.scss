@@ -60,7 +60,16 @@ body {
 .page-container {
   max-width: 1360px;
   margin: 0 auto;
-  padding: 24px 20px 88px;
+  padding: 16px 12px 108px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 600px) {
+  .page-container {
+    padding: 24px 20px 88px;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -75,6 +84,8 @@ body {
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-color) !important;
   color: var(--text-primary) !important;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 body.body--dark .app-header {
@@ -91,6 +102,27 @@ body.body--dark .app-header {
   background-color: rgba(255, 255, 255, 0.94) !important;
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border-color) !important;
+  box-sizing: border-box;
+
+  .q-tab {
+    min-height: 52px;
+    padding: 4px 2px;
+  }
+
+  .q-tab__label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 62px;
+  }
+
+  .q-tab__icon {
+    font-size: 20px;
+  }
 }
 
 body.body--dark .app-footer {
@@ -205,15 +237,143 @@ body.body--dark .fintech-card--hero {
   }
 }
 
+/* Tokens de Densidad Compacta Fintech */
+:root {
+  --control-height: 42px;
+  --control-font-size: 0.875rem; /* ~14px */
+  --btn-height: 40px;
+  --btn-sm-height: 34px;
+  --btn-font-size: 0.86rem; /* ~13.8px */
+  --field-radius: 10px;
+}
+
+/* Estandarización de Labels */
+.field-label {
+  display: block;
+  font-size: 0.81rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  line-height: 1.25;
+}
+
+/* Inputs y Selects Quasar Compactos */
+.q-field--outlined.q-field--dense {
+  .q-field__control {
+    height: var(--control-height);
+    min-height: var(--control-height);
+    border-radius: var(--field-radius) !important;
+    padding: 0 12px;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+
+  &.q-field--auto-height .q-field__control {
+    min-height: var(--control-height);
+    height: auto;
+  }
+
+  .q-field__marginal {
+    height: var(--control-height);
+    font-size: 1.05rem;
+  }
+
+  .q-field__native,
+  .q-field__input {
+    font-size: var(--control-font-size);
+    letter-spacing: -0.01em;
+  }
+}
+
+.q-field--outlined .q-field__control {
+  border-radius: var(--field-radius) !important;
+}
+
 /* Botones y Controles */
 .rounded-btn {
-  border-radius: 10px !important;
+  border-radius: var(--field-radius) !important;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
-.q-field--outlined .q-field__control {
-  border-radius: 10px !important;
+/* Botones de acción reutilizables compactos */
+.app-action-btn {
+  height: var(--btn-height);
+  min-height: var(--btn-height);
+  border-radius: var(--field-radius) !important;
+  font-size: var(--btn-font-size) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  padding: 0 14px;
+  white-space: nowrap;
+  transition: all 0.16s ease;
+
+  .q-icon {
+    font-size: 17px !important;
+  }
+
+  &.q-btn--size-sm {
+    height: var(--btn-sm-height);
+    min-height: var(--btn-sm-height);
+    font-size: 0.80rem !important;
+    padding: 0 10px;
+
+    .q-icon {
+      font-size: 15px !important;
+    }
+  }
+
+  &.app-action-btn--ghost {
+    color: var(--text-secondary) !important;
+    padding: 0 10px;
+
+    &:hover {
+      background-color: var(--bg-surface-subtle) !important;
+      color: var(--text-primary) !important;
+    }
+  }
+}
+
+/* Modales y Footers Estandarizados */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 380px) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+.modal-btn {
+  height: var(--btn-height) !important;
+  min-height: var(--btn-height) !important;
+  border-radius: var(--field-radius) !important;
+  font-size: var(--btn-font-size) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+
+  .q-icon {
+    font-size: 16px !important;
+    margin-right: 4px !important;
+  }
+}
+
+.modal-btn-cancel {
+  height: var(--btn-height) !important;
+  min-height: var(--btn-height) !important;
+  padding: 0 12px !important;
+  color: var(--text-secondary) !important;
+}
+
+.modal-btn-save {
+  height: var(--btn-height) !important;
+  min-height: var(--btn-height) !important;
+  padding: 0 16px !important;
 }
 
 .q-dialog__inner > .q-card {

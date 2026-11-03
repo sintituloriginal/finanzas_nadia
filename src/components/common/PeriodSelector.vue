@@ -1,5 +1,8 @@
 <template>
-  <div class="row items-center q-gutter-sm no-wrap">
+  <div
+    class="period-selector-container"
+    :class="{ 'period-selector--mobile': isMobile }"
+  >
     <q-select
       v-model="selectedMonth"
       :options="monthOptions"
@@ -9,11 +12,11 @@
       outlined
       options-dense
       bg-color="transparent"
-      class="period-select"
+      class="period-select-field month-select"
       aria-label="Seleccionar mes"
     >
       <template #prepend>
-        <q-icon name="calendar_month" size="18px" color="primary" />
+        <q-icon name="calendar_month" size="17px" color="primary" class="gt-xs" />
       </template>
     </q-select>
 
@@ -24,7 +27,7 @@
       outlined
       options-dense
       bg-color="transparent"
-      class="year-select"
+      class="period-select-field year-select"
       aria-label="Seleccionar año"
     />
   </div>
@@ -38,9 +41,11 @@ import { MONTHS_ES } from '@/utils/format'
 const props = withDefaults(
   defineProps<{
     allowFullYear?: boolean
+    isMobile?: boolean
   }>(),
   {
-    allowFullYear: true
+    allowFullYear: true,
+    isMobile: false
   }
 )
 
@@ -83,11 +88,59 @@ const selectedYear = computed({
 </script>
 
 <style scoped>
-.period-select {
-  min-width: 155px;
+.period-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
 }
-.year-select {
-  min-width: 96px;
+
+/* Modo Desktop */
+.period-selector-container:not(.period-selector--mobile) {
+  flex-wrap: nowrap;
+}
+
+.period-selector-container:not(.period-selector--mobile) .month-select {
+  width: 170px;
+  min-width: 0;
+}
+
+.period-selector-container:not(.period-selector--mobile) .year-select {
+  width: 102px;
+  min-width: 0;
+}
+
+/* Modo Móvil explícito o pantalla < 768px */
+.period-selector--mobile {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.period-selector--mobile .period-select-field {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+:deep(.q-field--dense .q-field__control) {
+  height: 38px;
+  min-height: 38px;
+  border-radius: 9px;
+  padding: 0 10px;
+}
+
+:deep(.q-field--dense .q-field__native) {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.q-field__marginal) {
+  height: 38px;
 }
 </style>
 

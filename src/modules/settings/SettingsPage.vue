@@ -197,11 +197,4 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-.field-label {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-}
 </style>

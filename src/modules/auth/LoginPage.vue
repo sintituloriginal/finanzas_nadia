@@ -96,8 +96,7 @@
             unelevated
             no-caps
             color="primary"
-            size="md"
-            class="full-width rounded-btn q-py-sm text-weight-bold q-mt-sm"
+            class="full-width rounded-btn login-submit-btn text-weight-bold q-mt-sm"
             label="Ingresar a Mi Presupuesto"
             icon-right="arrow_forward"
             :loading="authStore.loading"
@@ -166,12 +165,11 @@ async function handleLogin() {
   box-shadow: 0 12px 24px -6px rgba(13, 148, 136, 0.45);
 }
 
-.field-label {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
+.login-submit-btn {
+  height: 42px;
+  min-height: 42px;
+  font-size: 0.88rem;
+  letter-spacing: -0.01em;
 }
 
 .error-box {

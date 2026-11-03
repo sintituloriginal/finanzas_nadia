@@ -204,13 +204,9 @@
           <div class="row q-col-gutter-sm">
             <div class="col-12 col-sm-6">
               <label class="field-label">Monto objetivo (CLP) *</label>
-              <q-input
-                v-model.number="goalForm.target_amount"
-                type="number"
-                outlined
-                dense
-                prefix="$"
-                :rules="[(val) => Number(val) > 0 || 'Mayor a $0']"
+              <AppCurrencyInput
+                v-model="goalForm.target_amount"
+                :rules="[(val) => Boolean(val && Number(val) > 0) || 'Mayor a $0']"
               />
             </div>
             <div class="col-12 col-sm-6">
@@ -237,9 +233,9 @@
               clearable
             />
           </div>
-          <div class="row justify-end q-gutter-sm q-pt-sm">
-            <AppActionButton variant="ghost" label="Cancelar" v-close-popup />
-            <AppActionButton type="submit" icon="check" label="Guardar meta" />
+          <div class="modal-footer q-pt-xs">
+            <AppActionButton variant="ghost" label="Cancelar" v-close-popup class="modal-btn modal-btn-cancel" />
+            <AppActionButton type="submit" icon="check" label="Guardar meta" class="modal-btn modal-btn-save" />
           </div>
         </q-form>
       </AppFormCard>
@@ -255,13 +251,9 @@
         <q-form @submit.prevent="saveContributionForm" class="q-gutter-y-md">
           <div>
             <label class="field-label">Monto (CLP) *</label>
-            <q-input
-              v-model.number="contribForm.amount"
-              type="number"
-              outlined
-              prefix="$"
-              input-class="text-h6 text-weight-bold font-mono"
-              :rules="[(val) => Number(val) > 0 || 'Ingresa un monto mayor a $0']"
+            <AppCurrencyInput
+              v-model="contribForm.amount"
+              :rules="[(val) => Boolean(val && Number(val) > 0) || 'Ingresa un monto mayor a $0']"
             />
           </div>
           <div>
@@ -306,9 +298,14 @@
               />
             </div>
           </div>
-          <div class="row justify-end q-gutter-sm q-pt-sm">
-            <AppActionButton variant="ghost" label="Cancelar" v-close-popup />
-            <AppActionButton type="submit" icon="check" label="Confirmar operación" />
+          <div class="modal-footer q-pt-xs">
+            <AppActionButton variant="ghost" label="Cancelar" v-close-popup class="modal-btn modal-btn-cancel" />
+            <AppActionButton
+              type="submit"
+              icon="check"
+              :label="contribForm.type === 'deposit' ? 'Guardar aporte' : 'Confirmar retiro'"
+              class="modal-btn modal-btn-save"
+            />
           </div>
         </q-form>
       </AppFormCard>
@@ -328,6 +325,7 @@ import AppEmptyState from '@/components/common/AppEmptyState.vue'
 import AppFormCard from '@/components/common/AppFormCard.vue'
 import AppActionButton from '@/components/common/AppActionButton.vue'
 import AppStatusBadge from '@/components/common/AppStatusBadge.vue'
+import AppCurrencyInput from '@/components/common/AppCurrencyInput.vue'
 import type { SavingsGoal } from '@/types/finance'
 
 const $q = useQuasar()
@@ -355,7 +353,7 @@ const editingGoalId = ref<string | undefined>(undefined)
 const goalForm = reactive({
   name: '',
   description: '',
-  target_amount: 1000000,
+  target_amount: 1000000 as number | null,
   target_date: '',
   color: '#0D9488',
   icon: 'savings',
@@ -394,7 +392,7 @@ async function saveGoalForm() {
       id: editingGoalId.value,
       name: goalForm.name,
       description: goalForm.description || null,
-      target_amount: goalForm.target_amount,
+      target_amount: Number(goalForm.target_amount) || 0,
       target_date: goalForm.target_date || null,
       color: goalForm.color,
       icon: goalForm.icon,
@@ -426,7 +424,7 @@ const contribDialogOpen = ref(false)
 const selectedGoalForContrib = ref<SavingsGoal | null>(null)
 const contribForm = reactive({
   type: 'deposit' as 'deposit' | 'withdrawal',
-  amount: 50000,
+  amount: 50000 as number | null,
   source_account_id: '' as string | null,
   create_internal_transfer: true,
   contribution_date: getTodayISO(),
@@ -450,7 +448,7 @@ async function saveContributionForm() {
     await financeStore.recordSavingsContribution({
       goal_id: selectedGoalForContrib.value.id,
       type: contribForm.type,
-      amount: contribForm.amount,
+      amount: Number(contribForm.amount) || 0,
       contribution_date: contribForm.contribution_date,
       source_account_id: contribForm.source_account_id,
       create_internal_transfer: contribForm.create_internal_transfer,

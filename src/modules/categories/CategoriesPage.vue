@@ -228,9 +228,9 @@
               </q-input>
             </div>
           </div>
-          <div class="row justify-end q-gutter-sm q-pt-sm">
-            <AppActionButton variant="ghost" label="Cancelar" v-close-popup />
-            <AppActionButton type="submit" label="Guardar categoría" icon="check" />
+          <div class="modal-footer q-pt-xs">
+            <AppActionButton variant="ghost" label="Cancelar" v-close-popup class="modal-btn modal-btn-cancel" />
+            <AppActionButton type="submit" label="Guardar categoría" icon="check" class="modal-btn modal-btn-save" />
           </div>
         </q-form>
       </AppFormCard>
@@ -267,18 +267,20 @@
             />
           </div>
 
-          <div class="row justify-end q-gutter-sm q-pt-sm">
-            <AppActionButton variant="ghost" label="Cancelar" v-close-popup />
+          <div class="modal-footer q-pt-xs">
+            <AppActionButton variant="ghost" label="Cancelar" v-close-popup class="modal-btn modal-btn-cancel" />
             <AppActionButton
               v-if="deleteCategoryUsage > 0"
               variant="outline"
               label="Solo desactivar"
+              class="modal-btn"
               @click="deactivateInsteadOfDelete"
             />
             <AppActionButton
               variant="danger"
               :disable="deleteCategoryUsage > 0 && !reassignTargetId"
               :label="deleteCategoryUsage > 0 ? 'Reasignar y eliminar' : 'Eliminar'"
+              class="modal-btn modal-btn-save"
               @click="confirmCategoryDeletion"
             />
           </div>
@@ -323,12 +325,8 @@
           </div>
           <div>
             <label class="field-label">Saldo inicial (CLP)</label>
-            <q-input
-              v-model.number="accForm.initial_balance"
-              type="number"
-              outlined
-              dense
-              prefix="$"
+            <AppCurrencyInput
+              v-model="accForm.initial_balance"
               hint="El saldo actual se calcula automáticamente sumando tus movimientos confirmados."
             />
           </div>
@@ -338,9 +336,9 @@
             label="Cuenta activa"
             color="primary"
           />
-          <div class="row justify-end q-gutter-sm q-pt-sm">
-            <AppActionButton variant="ghost" label="Cancelar" v-close-popup />
-            <AppActionButton type="submit" label="Guardar cuenta" icon="check" />
+          <div class="modal-footer q-pt-xs">
+            <AppActionButton variant="ghost" label="Cancelar" v-close-popup class="modal-btn modal-btn-cancel" />
+            <AppActionButton type="submit" label="Guardar cuenta" icon="check" class="modal-btn modal-btn-save" />
           </div>
         </q-form>
       </AppFormCard>
@@ -358,6 +356,7 @@ import AppSectionCard from '@/components/common/AppSectionCard.vue'
 import AppFormCard from '@/components/common/AppFormCard.vue'
 import AppActionButton from '@/components/common/AppActionButton.vue'
 import AppStatusBadge from '@/components/common/AppStatusBadge.vue'
+import AppCurrencyInput from '@/components/common/AppCurrencyInput.vue'
 import type { Account, Category } from '@/types/finance'
 
 const $q = useQuasar()
@@ -501,7 +500,7 @@ const editingAccount = ref<Account | null>(null)
 const accForm = reactive({
   name: '',
   type: 'checking' as Account['type'],
-  initial_balance: 0,
+  initial_balance: 0 as number | null,
   color: '#0D9488',
   icon: 'account_balance',
   is_active: true
@@ -545,7 +544,7 @@ async function saveAccountForm() {
       await financeStore.updateAccount(editingAccount.value.id, {
         name: accForm.name,
         type: accForm.type,
-        initial_balance: accForm.initial_balance,
+        initial_balance: Number(accForm.initial_balance) || 0,
         is_active: accForm.is_active
       })
       $q.notify({ type: 'positive', message: 'Cuenta actualizada' })
@@ -553,7 +552,7 @@ async function saveAccountForm() {
       await financeStore.createAccount({
         name: accForm.name,
         type: accForm.type,
-        initial_balance: accForm.initial_balance,
+        initial_balance: Number(accForm.initial_balance) || 0,
         color: accForm.color,
         icon: accForm.icon
       })
