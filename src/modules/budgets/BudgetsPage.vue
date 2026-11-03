@@ -197,6 +197,8 @@
               type="submit"
               icon="check"
               label="Guardar presupuesto"
+              :loading="isSubmitting"
+              :disable="isSubmitting"
               class="modal-btn modal-btn-save"
             />
           </div>
@@ -268,7 +270,11 @@ function openBudgetDialog(item?: BudgetSummary) {
   dialogOpen.value = true
 }
 
+const isSubmitting = ref(false)
+
 async function saveForm() {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     const cleanAmount = typeof form.amount === 'number' && Number.isSafeInteger(form.amount)
       ? form.amount
@@ -288,6 +294,8 @@ async function saveForm() {
       type: 'negative',
       message: err instanceof Error ? err.message : 'Error al guardar presupuesto'
     })
+  } finally {
+    isSubmitting.value = false
   }
 }
 

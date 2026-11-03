@@ -32,7 +32,7 @@
 
       <!-- Cuerpo del formulario con scroll interno -->
       <q-card-section class="dialog-body col q-pa-md scroll">
-        <q-form ref="formRef" id="quick-tx-form" @submit="handleSubmit" class="q-gutter-y-sm">
+        <q-form ref="formRef" id="quick-tx-form" @submit.prevent="handleSubmit" class="q-gutter-y-sm">
           <!-- Selector segmentado compacto de tipo de movimiento -->
           <div class="q-mb-xs">
             <q-btn-toggle
@@ -213,9 +213,9 @@
             color="primary"
             icon="check"
             :label="editingTransaction ? 'Guardar cambios' : 'Guardar movimiento'"
-            :loading="saving"
+            :loading="isSubmitting"
+            :disable="isSubmitting"
             class="modal-btn modal-btn-save"
-            @click="onSaveClick"
           />
         </div>
       </q-card-actions>
@@ -247,7 +247,8 @@ const formRef = ref<any>(null)
 const $q = useQuasar()
 const financeStore = useFinanceStore()
 const authStore = useAuthStore()
-const saving = ref(false)
+const isSubmitting = ref(false)
+const creationIntentId = ref<string>('')
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -285,6 +286,11 @@ const destinationAccountOptions = computed(() =>
 )
 
 function resetForm() {
+  creationIntentId.value =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `tx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+
   const defaultAccount =
     authStore.profile?.default_account_id ||
     financeStore.activeAccounts[0]?.id ||
@@ -352,20 +358,10 @@ watch(
   }
 )
 
-async function onSaveClick() {
-  if (saving.value) return
-  if (formRef.value) {
-    const valid = await formRef.value.validate()
-    if (valid) {
-      await handleSubmit()
-    }
-  } else {
-    await handleSubmit()
-  }
-}
-
 async function handleSubmit() {
-  saving.value = true
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+
   try {
     const cleanAmount = typeof form.amount === 'number' && Number.isSafeInteger(form.amount)
       ? form.amount
@@ -391,7 +387,10 @@ async function handleSubmit() {
         position: 'top-right'
       })
     } else {
-      await financeStore.createTransaction(payload)
+      await financeStore.createTransaction({
+        id: creationIntentId.value,
+        ...payload
+      })
       $q.notify({
         type: 'positive',
         message: 'Movimiento registrado correctamente',
@@ -408,7 +407,7 @@ async function handleSubmit() {
       position: 'top-right'
     })
   } finally {
-    saving.value = false
+    isSubmitting.value = false
   }
 }
 </script>

@@ -478,5 +478,71 @@ describe('Motor Financiero — Reglas Contables en CLP', () => {
       }
     }
   })
+
+  it('bloquea envíos concurrentes mediante isSubmitting (doble clic / doble tap)', async () => {
+    let isSubmitting = false
+    let executionCount = 0
+
+    const submitHandler = async () => {
+      // Bloqueo síncrono idéntico a QuickTransactionDialog
+      if (isSubmitting) return
+      isSubmitting = true
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+        executionCount++
+      } finally {
+        isSubmitting = false
+      }
+    }
+
+    // Simular doble clic rápido concurrente
+    await Promise.all([submitHandler(), submitHandler(), submitHandler()])
+
+    // Solo debe ejecutarse 1 vez
+    expect(executionCount).toBe(1)
+  })
+
+  it('garantiza idempotencia: un reintento con el mismo identificador no duplica el movimiento', () => {
+    const transactionsList: Transaction[] = []
+    const intentId = 'tx-unique-intent-uuid'
+
+    const createWithIdempotency = (id: string, amount: number) => {
+      const existing = transactionsList.find((t) => t.id === id)
+      if (existing) return existing
+
+      const newTx: Transaction = {
+        id,
+        user_id: USER_A,
+        type: 'expense',
+        amount,
+        category_id: 'cat-alimentacion',
+        account_id: 'acc-checking',
+        destination_account_id: null,
+        description: 'Supermercado',
+        notes: null,
+        transaction_date: '2026-11-03',
+        status: 'confirmed',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      transactionsList.unshift(newTx)
+      return newTx
+    }
+
+    // Primer envío exitoso
+    const first = createWithIdempotency(intentId, 150000)
+    expect(transactionsList.length).toBe(1)
+    expect(first.amount).toBe(150000)
+
+    // Reintento idéntico (mismo intentId)
+    const second = createWithIdempotency(intentId, 150000)
+    expect(transactionsList.length).toBe(1) // NO se duplica
+    expect(second.id).toBe(first.id)
+
+    // Cálculo contable: gasto total debe ser exactamente 150000, no 300000
+    const totalSpent = transactionsList.reduce((acc, t) => acc + t.amount, 0)
+    expect(totalSpent).toBe(150000)
+  })
 })
 

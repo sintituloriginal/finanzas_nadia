@@ -399,7 +399,11 @@ function openEdit(tx: Transaction) {
   dialogOpen.value = true
 }
 
+const isDuplicating = ref(false)
+
 async function duplicateTransaction(tx: Transaction) {
+  if (isDuplicating.value) return
+  isDuplicating.value = true
   try {
     await financeStore.createTransaction({
       type: tx.type,
@@ -422,6 +426,8 @@ async function duplicateTransaction(tx: Transaction) {
       type: 'negative',
       message: err instanceof Error ? err.message : 'No se pudo duplicar el movimiento'
     })
+  } finally {
+    isDuplicating.value = false
   }
 }
 

@@ -206,7 +206,7 @@ export const useFinanceStore = defineStore('finance', () => {
   // CRUD MOVIMIENTOS (TRANSACTIONS)
   // ---------------------------------------------------------------------------
   async function createTransaction(
-    payload: Omit<Transaction, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+    payload: Omit<Transaction, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id?: string }
   ): Promise<Transaction> {
     const userId = authStore.user?.id ?? DEMO_USER_ID
     const cleanAmount = toCleanAmount(payload.amount)
@@ -227,8 +227,17 @@ export const useFinanceStore = defineStore('finance', () => {
       throw new Error('Debes seleccionar una categoría.')
     }
 
+    const txId = payload.id || generateId('tx')
+
+    // Idempotencia: si ya existe una transacción con este identificador, retornarla sin duplicar
+    const existing = transactions.value.find((t) => t.id === txId)
+    if (existing) {
+      return existing
+    }
+
     const nowIso = new Date().toISOString()
     const rowPayload = {
+      id: txId,
       user_id: userId,
       type: payload.type,
       amount: cleanAmount,
@@ -249,12 +258,13 @@ export const useFinanceStore = defineStore('finance', () => {
         .single()
       if (err) throw new Error(err.message)
       const created = data as unknown as Transaction
-      transactions.value = [created, ...transactions.value]
+      if (!transactions.value.some((t) => t.id === created.id)) {
+        transactions.value = [created, ...transactions.value]
+      }
       return created
     }
 
     const created: Transaction = {
-      id: generateId('tx'),
       ...rowPayload,
       created_at: nowIso,
       updated_at: nowIso
