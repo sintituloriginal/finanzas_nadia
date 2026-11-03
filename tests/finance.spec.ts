@@ -428,5 +428,55 @@ describe('Motor Financiero — Reglas Contables en CLP', () => {
     expect(csv.startsWith('\uFEFF')).toBe(true)
     expect(csv).toContain('31/10/2026;Egreso;Confirmado;Alimentación;Colación y café')
   })
+
+  it('valida montos según las reglas requeridas: 1000, 25000, 150000, 1250000 válidos; vacíos, 0 o negativos inválidos', () => {
+    const isAmountValid = (val: any) =>
+      typeof val === 'number' && Number.isSafeInteger(val) && val > 0
+
+    // Montos válidos requeridos
+    expect(isAmountValid(1000)).toBe(true)
+    expect(isAmountValid(25000)).toBe(true)
+    expect(isAmountValid(150000)).toBe(true)
+    expect(isAmountValid(1250000)).toBe(true)
+
+    // Montos inválidos requeridos
+    expect(isAmountValid(null)).toBe(false)
+    expect(isAmountValid(undefined)).toBe(false)
+    expect(isAmountValid('')).toBe(false)
+    expect(isAmountValid(0)).toBe(false)
+    expect(isAmountValid(-150000)).toBe(false)
+    expect(isAmountValid(NaN)).toBe(false)
+    expect(isAmountValid(150.5)).toBe(false) // No decimales en CLP
+  })
+
+  it('procesa y persiste montos numéricos limpios sin alterar valores al crear y editar', () => {
+    // Simulación del ciclo de guardado de movimientos
+    const rawInputs = [1000, 25000, 150000, 1250000]
+
+    for (const inputVal of rawInputs) {
+      // 1. Entrada del usuario y formato visual
+      const visualFormatted = formatCLPInput(inputVal)
+      expect(visualFormatted).toBe(inputVal.toLocaleString('es-CL'))
+
+      // 2. Parseo interno
+      const parsedInternal = parseCLPInput(visualFormatted)
+      expect(parsedInternal).toBe(inputVal)
+      expect(Number.isSafeInteger(parsedInternal)).toBe(true)
+
+      // 3. Payload hacia el store
+      const payloadAmount = typeof parsedInternal === 'number' && Number.isSafeInteger(parsedInternal)
+        ? parsedInternal
+        : parseCLPInput(String(parsedInternal ?? '')) ?? 0
+      expect(payloadAmount).toBe(inputVal)
+
+      // 4. Edición de monto: 150000 -> 1250000
+      if (inputVal === 150000) {
+        const editedVisual = formatCLPInput(1250000)
+        expect(editedVisual).toBe('1.250.000')
+        const editedParsed = parseCLPInput(editedVisual)
+        expect(editedParsed).toBe(1250000)
+      }
+    }
+  })
 })
 

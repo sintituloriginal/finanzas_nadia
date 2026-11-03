@@ -58,7 +58,7 @@
             label="Monto en CLP *"
             autofocus
             :rules="[
-              (val) => Boolean(val && Number(val) > 0) || 'Ingresa un monto positivo mayor a $0'
+              (val) => (typeof val === 'number' && Number.isSafeInteger(val) && val > 0) || 'El monto debe ser un número entero mayor a 0 CLP'
             ]"
             hint="Monto entero sin decimales (ej: 25.000)"
           />
@@ -228,7 +228,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useFinanceStore } from '@/stores/finance'
 import { useAuthStore } from '@/stores/auth'
-import { getTodayISO } from '@/utils/format'
+import { getTodayISO, parseCLPInput } from '@/utils/format'
 import AppCurrencyInput from '@/components/common/AppCurrencyInput.vue'
 import type { Transaction, TransactionStatus, TransactionType } from '@/types/finance'
 
@@ -367,9 +367,13 @@ async function onSaveClick() {
 async function handleSubmit() {
   saving.value = true
   try {
+    const cleanAmount = typeof form.amount === 'number' && Number.isSafeInteger(form.amount)
+      ? form.amount
+      : parseCLPInput(String(form.amount ?? '')) ?? 0
+
     const payload = {
       type: form.type,
-      amount: Math.round(Number(form.amount) || 0),
+      amount: cleanAmount,
       category_id: form.type === 'transfer' ? null : form.category_id,
       account_id: form.account_id,
       destination_account_id: form.type === 'transfer' ? form.destination_account_id : null,

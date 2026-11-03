@@ -1,7 +1,7 @@
 <template>
   <q-input
     ref="qInputRef"
-    v-model="displayValue"
+    :model-value="displayValue"
     type="text"
     inputmode="numeric"
     :outlined="outlined"
@@ -9,14 +9,14 @@
     :label="label"
     :prefix="prefix"
     :hint="hint"
-    :rules="rules"
+    :rules="computedRules"
     :disable="disable"
     :readonly="readonly"
     :autofocus="autofocus"
     :input-class="['font-mono', inputClass]"
     class="app-currency-input"
+    @update:model-value="handleValueUpdate"
     @keydown="handleKeyDown"
-    @input="handleInput"
     @blur="handleBlur"
   >
     <template v-if="$slots.prepend" #prepend>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import type { QInput } from 'quasar'
 import { formatCLPInput, parseCLPInput } from '@/utils/format'
 
@@ -67,15 +67,36 @@ const displayValue = ref<string>(formatCLPInput(props.modelValue))
 watch(
   () => props.modelValue,
   (newVal) => {
-    const parsedCurrent = parseCLPInput(displayValue.value)
-    if (newVal !== parsedCurrent) {
+    const currentNumeric = parseCLPInput(displayValue.value)
+    if (newVal !== currentNumeric) {
       displayValue.value = formatCLPInput(newVal)
     }
-  }
+  },
+  { immediate: true }
 )
+
+/**
+ * Los rules de Quasar reciben el valor del input (displayValue).
+ * computedRules adapta cada regla para que evalúe el valor numérico entero real (number | null),
+ * evitando conversiones erróneas con Number() sobre cadenas con separadores de miles ("150.000").
+ */
+const computedRules = computed(() => {
+  if (!props.rules || props.rules.length === 0) return undefined
+  return props.rules.map((rule) => {
+    return (rawDisplayVal: any) => {
+      const numericVal = typeof rawDisplayVal === 'number'
+        ? rawDisplayVal
+        : parseCLPInput(rawDisplayVal)
+      return rule(numericVal)
+    }
+  })
+})
 
 function getNativeInput(): HTMLInputElement | null {
   if (!qInputRef.value) return null
+  if (qInputRef.value.nativeEl) {
+    return qInputRef.value.nativeEl as HTMLInputElement
+  }
   if (typeof qInputRef.value.getNativeElement === 'function') {
     return qInputRef.value.getNativeElement() as HTMLInputElement
   }
@@ -83,32 +104,29 @@ function getNativeInput(): HTMLInputElement | null {
   return el?.querySelector('input') ?? null
 }
 
-function handleInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  const rawText = target.value ?? ''
-
-  // Contar dígitos antes del cursor
-  const cursorPos = target.selectionStart ?? rawText.length
+function handleValueUpdate(val: string | number | null) {
+  const rawText = String(val ?? '')
+  const inputEl = getNativeInput()
+  const cursorPos = inputEl?.selectionStart ?? rawText.length
   const digitsBeforeCursor = rawText.slice(0, cursorPos).replace(/\D/g, '').length
 
-  // Parsear número limpio
   const numericVal = parseCLPInput(rawText)
 
   if (numericVal === null) {
     displayValue.value = ''
     emit('update:modelValue', null)
+    emit('change', null)
     return
   }
 
-  // Formatear con puntos de miles
   const formatted = formatCLPInput(numericVal)
   displayValue.value = formatted
   emit('update:modelValue', numericVal)
+  emit('change', numericVal)
 
-  // Restaurar cursor de forma estable
   nextTick(() => {
-    const input = getNativeInput()
-    if (!input) return
+    const native = getNativeInput()
+    if (!native) return
 
     let targetPos = 0
     let seenDigits = 0
@@ -124,7 +142,7 @@ function handleInput(event: Event) {
     if (seenDigits < digitsBeforeCursor) {
       targetPos = formatted.length
     }
-    input.setSelectionRange(targetPos, targetPos)
+    native.setSelectionRange(targetPos, targetPos)
   })
 }
 
@@ -145,7 +163,7 @@ function handleKeyDown(event: KeyboardEvent) {
   if (allowedKeys.includes(event.key)) return
   if (event.ctrlKey || event.metaKey || event.altKey) return
 
-  // Rechazar no numéricos
+  // Rechazar caracteres no numéricos
   if (!/^\d$/.test(event.key)) {
     event.preventDefault()
     return
@@ -165,7 +183,13 @@ function handleBlur() {
 defineExpose({
   focus: () => getNativeInput()?.focus(),
   blur: () => getNativeInput()?.blur(),
-  validate: () => qInputRef.value?.validate()
+  validate: (val?: any) => {
+    if (val !== undefined) {
+      const display = typeof val === 'number' ? formatCLPInput(val) : val
+      return qInputRef.value?.validate(display)
+    }
+    return qInputRef.value?.validate()
+  }
 })
 </script>
 

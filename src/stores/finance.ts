@@ -8,6 +8,7 @@ import {
   calculateBudgetSummaries,
   calculatePeriodMetrics
 } from '@/utils/finance'
+import { parseCLPInput } from '@/utils/format'
 import type {
   Account,
   Budget,
@@ -17,6 +18,16 @@ import type {
   SavingsGoal,
   Transaction
 } from '@/types/finance'
+
+function toCleanAmount(val: unknown): number {
+  if (typeof val === 'number') {
+    return Number.isSafeInteger(val) ? val : Math.round(Number(val) || 0)
+  }
+  if (typeof val === 'string') {
+    return parseCLPInput(val) ?? 0
+  }
+  return 0
+}
 
 const STORAGE_DATA_KEY = 'mi_presupuesto_local_data_v1'
 const STORAGE_FILTER_KEY = 'mi_presupuesto_period_filter_v1'
@@ -198,7 +209,7 @@ export const useFinanceStore = defineStore('finance', () => {
     payload: Omit<Transaction, 'id' | 'user_id' | 'created_at' | 'updated_at'>
   ): Promise<Transaction> {
     const userId = authStore.user?.id ?? DEMO_USER_ID
-    const cleanAmount = Math.round(Number(payload.amount) || 0)
+    const cleanAmount = toCleanAmount(payload.amount)
     if (cleanAmount <= 0) {
       throw new Error('El monto debe ser un número entero mayor a 0 CLP.')
     }
@@ -260,10 +271,15 @@ export const useFinanceStore = defineStore('finance', () => {
     const existing = transactions.value.find((t) => t.id === id)
     if (!existing) throw new Error('Movimiento no encontrado.')
 
+    const cleanAmount = payload.amount !== undefined ? toCleanAmount(payload.amount) : existing.amount
+    if (payload.amount !== undefined && cleanAmount <= 0) {
+      throw new Error('El monto debe ser un número entero mayor a 0 CLP.')
+    }
+
     const merged: Transaction = {
       ...existing,
       ...payload,
-      amount: payload.amount !== undefined ? Math.round(Number(payload.amount)) : existing.amount,
+      amount: cleanAmount,
       category_id:
         (payload.type ?? existing.type) === 'transfer'
           ? null
@@ -458,7 +474,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
     const userId = authStore.user?.id ?? DEMO_USER_ID
     const nowIso = new Date().toISOString()
-    const cleanInitial = Math.round(Number(payload.initial_balance) || 0)
+    const cleanInitial = toCleanAmount(payload.initial_balance)
 
     if (isSupabaseConfigured && supabase && authStore.user) {
       const { data, error: err } = await supabase
@@ -525,8 +541,8 @@ export const useFinanceStore = defineStore('finance', () => {
     year: number
     amount: number
   }): Promise<void> {
-    const cleanAmount = Math.round(Number(payload.amount) || 0)
-    if (cleanAmount <= 0) throw new Error('El presupuesto debe ser mayor a 0 CLP.')
+    const cleanAmount = toCleanAmount(payload.amount)
+    if (cleanAmount <= 0) throw new Error('El monto presupuestado debe ser un número entero mayor a 0 CLP.')
 
     const duplicate = budgets.value.find(
       (b) =>
@@ -639,8 +655,8 @@ export const useFinanceStore = defineStore('finance', () => {
   }): Promise<void> {
     const cleanName = payload.name.trim()
     if (!cleanName) throw new Error('El nombre de la meta es obligatorio.')
-    const cleanTarget = Math.round(Number(payload.target_amount) || 0)
-    if (cleanTarget <= 0) throw new Error('El monto objetivo debe ser mayor a 0 CLP.')
+    const cleanTarget = toCleanAmount(payload.target_amount)
+    if (cleanTarget <= 0) throw new Error('La meta debe tener un monto objetivo mayor a 0 CLP.')
 
     const userId = authStore.user?.id ?? DEMO_USER_ID
     const nowIso = new Date().toISOString()
@@ -744,8 +760,8 @@ export const useFinanceStore = defineStore('finance', () => {
     const goal = savingsGoals.value.find((g) => g.id === payload.goal_id)
     if (!goal) throw new Error('Meta de ahorro no encontrada.')
 
-    const cleanAmount = Math.round(Number(payload.amount) || 0)
-    if (cleanAmount <= 0) throw new Error('El monto debe ser mayor a 0 CLP.')
+    const cleanAmount = toCleanAmount(payload.amount)
+    if (cleanAmount <= 0) throw new Error('El monto debe ser un número entero mayor a 0 CLP.')
 
     if (payload.type === 'withdrawal' && cleanAmount > goal.current_amount) {
       throw new Error('El monto del retiro no puede superar el saldo acumulado en la meta.')

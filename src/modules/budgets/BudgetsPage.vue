@@ -183,7 +183,7 @@
             <label class="field-label">Monto presupuestado mensual (CLP) *</label>
             <AppCurrencyInput
               v-model="form.amount"
-              :rules="[(val) => Number(val) > 0 || 'Ingresa un monto mayor a $0']"
+              :rules="[(val) => (typeof val === 'number' && Number.isSafeInteger(val) && val > 0) || 'El monto presupuestado debe ser un número entero mayor a 0 CLP']"
             />
           </div>
           <div class="modal-footer q-pt-xs">
@@ -210,7 +210,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useFinanceStore } from '@/stores/finance'
-import { formatCLP, getMonthName } from '@/utils/format'
+import { formatCLP, getMonthName, parseCLPInput } from '@/utils/format'
 import AppPageHeader from '@/components/common/AppPageHeader.vue'
 import AppStatCard from '@/components/common/AppStatCard.vue'
 import AppEmptyState from '@/components/common/AppEmptyState.vue'
@@ -270,12 +270,16 @@ function openBudgetDialog(item?: BudgetSummary) {
 
 async function saveForm() {
   try {
+    const cleanAmount = typeof form.amount === 'number' && Number.isSafeInteger(form.amount)
+      ? form.amount
+      : parseCLPInput(String(form.amount ?? '')) ?? 0
+
     await financeStore.saveBudget({
       id: editingId.value,
       category_id: form.category_id,
       month: activeMonth.value,
       year: financeStore.periodFilter.year,
-      amount: form.amount
+      amount: cleanAmount
     })
     dialogOpen.value = false
     $q.notify({ type: 'positive', message: 'Presupuesto guardado correctamente' })

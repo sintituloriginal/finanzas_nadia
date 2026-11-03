@@ -350,7 +350,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useFinanceStore } from '@/stores/finance'
-import { formatCLP } from '@/utils/format'
+import { formatCLP, parseCLPInput } from '@/utils/format'
 import AppPageHeader from '@/components/common/AppPageHeader.vue'
 import AppSectionCard from '@/components/common/AppSectionCard.vue'
 import AppFormCard from '@/components/common/AppFormCard.vue'
@@ -540,11 +540,15 @@ function openAccountDialog(acc?: Account) {
 
 async function saveAccountForm() {
   try {
+    const cleanInitial = typeof accForm.initial_balance === 'number' && Number.isSafeInteger(accForm.initial_balance)
+      ? accForm.initial_balance
+      : parseCLPInput(String(accForm.initial_balance ?? '')) ?? 0
+
     if (editingAccount.value) {
       await financeStore.updateAccount(editingAccount.value.id, {
         name: accForm.name,
         type: accForm.type,
-        initial_balance: Number(accForm.initial_balance) || 0,
+        initial_balance: cleanInitial,
         is_active: accForm.is_active
       })
       $q.notify({ type: 'positive', message: 'Cuenta actualizada' })
@@ -552,7 +556,7 @@ async function saveAccountForm() {
       await financeStore.createAccount({
         name: accForm.name,
         type: accForm.type,
-        initial_balance: Number(accForm.initial_balance) || 0,
+        initial_balance: cleanInitial,
         color: accForm.color,
         icon: accForm.icon
       })

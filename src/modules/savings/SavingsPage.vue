@@ -206,7 +206,7 @@
               <label class="field-label">Monto objetivo (CLP) *</label>
               <AppCurrencyInput
                 v-model="goalForm.target_amount"
-                :rules="[(val) => Boolean(val && Number(val) > 0) || 'Mayor a $0']"
+                :rules="[(val) => (typeof val === 'number' && Number.isSafeInteger(val) && val > 0) || 'La meta debe tener un monto objetivo mayor a 0 CLP']"
               />
             </div>
             <div class="col-12 col-sm-6">
@@ -253,7 +253,7 @@
             <label class="field-label">Monto (CLP) *</label>
             <AppCurrencyInput
               v-model="contribForm.amount"
-              :rules="[(val) => Boolean(val && Number(val) > 0) || 'Ingresa un monto mayor a $0']"
+              :rules="[(val) => (typeof val === 'number' && Number.isSafeInteger(val) && val > 0) || 'El monto debe ser un número entero mayor a 0 CLP']"
             />
           </div>
           <div>
@@ -318,7 +318,7 @@ import { computed, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useFinanceStore } from '@/stores/finance'
 import { estimateMonthsToGoal } from '@/utils/finance'
-import { formatCLP, formatDateCL, getTodayISO } from '@/utils/format'
+import { formatCLP, formatDateCL, getTodayISO, parseCLPInput } from '@/utils/format'
 import AppPageHeader from '@/components/common/AppPageHeader.vue'
 import AppSectionCard from '@/components/common/AppSectionCard.vue'
 import AppEmptyState from '@/components/common/AppEmptyState.vue'
@@ -388,11 +388,15 @@ function openGoalDialog(goal?: SavingsGoal) {
 
 async function saveGoalForm() {
   try {
+    const cleanTarget = typeof goalForm.target_amount === 'number' && Number.isSafeInteger(goalForm.target_amount)
+      ? goalForm.target_amount
+      : parseCLPInput(String(goalForm.target_amount ?? '')) ?? 0
+
     await financeStore.saveSavingsGoal({
       id: editingGoalId.value,
       name: goalForm.name,
       description: goalForm.description || null,
-      target_amount: Number(goalForm.target_amount) || 0,
+      target_amount: cleanTarget,
       target_date: goalForm.target_date || null,
       color: goalForm.color,
       icon: goalForm.icon,
@@ -445,10 +449,14 @@ function openContributionDialog(goal: SavingsGoal, type: 'deposit' | 'withdrawal
 async function saveContributionForm() {
   if (!selectedGoalForContrib.value) return
   try {
+    const cleanAmount = typeof contribForm.amount === 'number' && Number.isSafeInteger(contribForm.amount)
+      ? contribForm.amount
+      : parseCLPInput(String(contribForm.amount ?? '')) ?? 0
+
     await financeStore.recordSavingsContribution({
       goal_id: selectedGoalForContrib.value.id,
       type: contribForm.type,
-      amount: Number(contribForm.amount) || 0,
+      amount: cleanAmount,
       contribution_date: contribForm.contribution_date,
       source_account_id: contribForm.source_account_id,
       create_internal_transfer: contribForm.create_internal_transfer,
