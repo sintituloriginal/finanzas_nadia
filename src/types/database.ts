@@ -7,6 +7,7 @@ import type {
   SavingsGoal,
   Transaction
 } from '@/types/finance'
+import type { SavedProperty, WeddingVenue, WeddingVenueDocument } from '@/types/places'
 
 export interface Database {
   public: {
@@ -45,6 +46,21 @@ export interface Database {
         Row: SavingsContribution
         Insert: Omit<SavingsContribution, 'id' | 'created_at'> & { id?: string }
         Update: Partial<Omit<SavingsContribution, 'id' | 'user_id' | 'created_at'>>
+      }
+      saved_properties: {
+        Row: SavedProperty
+        Insert: Omit<SavedProperty, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+        Update: Partial<Omit<SavedProperty, 'id' | 'user_id' | 'created_at'>>
+      }
+      wedding_venues: {
+        Row: WeddingVenue
+        Insert: Omit<WeddingVenue, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+        Update: Partial<Omit<WeddingVenue, 'id' | 'user_id' | 'created_at'>>
+      }
+      wedding_venue_documents: {
+        Row: WeddingVenueDocument
+        Insert: Omit<WeddingVenueDocument, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+        Update: Partial<Omit<WeddingVenueDocument, 'id' | 'user_id' | 'created_at'>>
       }
     }
     Functions: {

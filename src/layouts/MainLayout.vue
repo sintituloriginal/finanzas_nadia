@@ -61,6 +61,15 @@
         <!-- Fila 1: Título a la izquierda, controles globales a la derecha -->
         <div class="header-mobile-row-1 row items-center justify-between no-wrap q-px-md">
           <div class="row items-center no-wrap min-w-0">
+            <q-btn
+              flat
+              dense
+              round
+              icon="menu"
+              aria-label="Abrir menú de secciones"
+              @click="leftDrawerOpen = !leftDrawerOpen"
+              class="q-mr-xs text-secondary-ink header-touch-btn"
+            />
             <div class="brand-badge-sm q-mr-sm">
               <q-icon name="account_balance_wallet" size="18px" color="white" />
             </div>
@@ -105,6 +114,19 @@
                         {{ authStore.user?.email }}
                       </q-item-label>
                     </q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable to="/viviendas">
+                    <q-item-section avatar style="min-width: 32px">
+                      <q-icon name="home_work" size="18px" />
+                    </q-item-section>
+                    <q-item-section>Viviendas</q-item-section>
+                  </q-item>
+                  <q-item clickable to="/lugares-matrimonio">
+                    <q-item-section avatar style="min-width: 32px">
+                      <q-icon name="celebration" size="18px" />
+                    </q-item-section>
+                    <q-item-section>Lugares de matrimonio</q-item-section>
                   </q-item>
                   <q-separator />
                   <q-item clickable to="/configuracion">
@@ -214,6 +236,7 @@
               exact
               active-class="nav-item-active"
               class="nav-item"
+              @click="onNavItemClick"
             >
               <q-item-section avatar style="min-width: 38px">
                 <q-icon :name="item.icon" size="20px" />
@@ -359,6 +382,8 @@ const navItems = [
   { label: 'Presupuestos', icon: 'pie_chart', to: '/presupuestos' },
   { label: 'Ahorros', icon: 'savings', to: '/ahorros' },
   { label: 'Reportes', icon: 'insights', to: '/reportes' },
+  { label: 'Viviendas', icon: 'home_work', to: '/viviendas' },
+  { label: 'Lugares de matrimonio', icon: 'celebration', to: '/lugares-matrimonio' },
   { label: 'Configuración', icon: 'tune', to: '/configuracion' }
 ]
 
@@ -379,6 +404,12 @@ function toggleDarkMode() {
   localStorage.setItem('mi_presupuesto_theme', themePref)
   if (authStore.isAuthenticated) {
     authStore.updateProfileSettings({ theme_preference: themePref })
+  }
+}
+
+function onNavItemClick() {
+  if ($q.screen.lt.md) {
+    leftDrawerOpen.value = false
   }
 }
 
