@@ -150,17 +150,51 @@
               </q-badge>
               <div v-else />
 
-              <q-btn
-                round
-                dense
-                flat
-                size="sm"
-                :icon="item.is_favorite ? 'star' : 'star_border'"
-                :color="item.is_favorite ? 'amber-4' : 'white'"
-                class="bg-dark-opacity"
-                aria-label="Alternar favorito"
-                @click.stop="toggleFavorite(item.id)"
-              />
+              <div class="row items-center q-gutter-x-xs">
+                <!-- Botón de favorito -->
+                <q-btn
+                  round
+                  dense
+                  flat
+                  size="sm"
+                  :icon="item.is_favorite ? 'star' : 'star_border'"
+                  :color="item.is_favorite ? 'amber-4' : 'white'"
+                  class="bg-dark-opacity card-action-overlay-btn"
+                  aria-label="Alternar favorito"
+                  @click.stop="toggleFavorite(item.id)"
+                />
+
+                <!-- Menú móvil de acciones (Editar / Eliminar) -->
+                <q-btn
+                  round
+                  dense
+                  flat
+                  size="sm"
+                  icon="more_vert"
+                  color="white"
+                  class="bg-dark-opacity card-action-overlay-btn lt-sm"
+                  aria-label="Más opciones"
+                  @click.stop
+                >
+                  <q-menu auto-close anchor="bottom right" self="top right">
+                    <q-list dense style="min-width: 140px">
+                      <q-item clickable v-close-popup @click="openDialog(item)">
+                        <q-item-section avatar style="min-width: 28px">
+                          <q-icon name="edit" size="18px" class="text-secondary-ink" />
+                        </q-item-section>
+                        <q-item-section>Editar</q-item-section>
+                      </q-item>
+                      <q-separator />
+                      <q-item clickable v-close-popup @click="confirmDelete(item)" class="text-negative">
+                        <q-item-section avatar style="min-width: 28px">
+                          <q-icon name="delete_outline" size="18px" color="negative" />
+                        </q-item-section>
+                        <q-item-section>Eliminar</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </q-btn>
+              </div>
             </div>
           </div>
 
@@ -312,7 +346,7 @@
                 </q-btn>
               </div>
 
-              <div class="row q-gutter-xs">
+              <div class="row q-gutter-xs gt-xs">
                 <q-btn
                   flat
                   round
@@ -1078,6 +1112,14 @@ onMounted(() => {
 
 .bg-dark-opacity {
   background: rgba(0, 0, 0, 0.55);
+}
+
+.card-action-overlay-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  backdrop-filter: blur(4px);
 }
 
 .title-clamp {
