@@ -932,20 +932,24 @@ onMounted(() => {
 .property-media-box {
   position: relative;
   width: 100%;
-  height: 180px;
-  background-color: var(--bg-surface-elevated);
+  height: 200px;
+  background-color: var(--bg-surface-subtle, #f1f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
 .property-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   transition: transform 0.25s ease;
 }
 
 .property-card:hover .property-img {
-  transform: scale(1.03);
+  transform: scale(1.02);
 }
 
 .media-overlay-top {
@@ -956,6 +960,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.media-overlay-top > * {
+  pointer-events: auto;
 }
 
 .type-badge {
@@ -1127,6 +1137,10 @@ onMounted(() => {
 }
 
 @media (max-width: 599px) {
+  .property-media-box {
+    height: 190px;
+  }
+
   .form-grid-2 {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1134,6 +1148,12 @@ onMounted(() => {
 
   .toggle-placeholder-label {
     display: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .property-media-box {
+    height: 170px;
   }
 }
 

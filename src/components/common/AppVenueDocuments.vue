@@ -58,7 +58,7 @@
         :key="doc.id"
         class="doc-item-card row items-center justify-between no-wrap q-pa-sm"
       >
-        <div class="row items-center no-wrap min-w-0 q-mr-sm">
+        <div class="row items-center no-wrap min-w-0 q-mr-sm col">
           <div class="pdf-icon-box q-mr-sm shrink-0">
             <q-icon name="description" size="18px" color="negative" />
           </div>
@@ -127,7 +127,7 @@
         :key="pDoc.tempId"
         class="doc-item-card pending-doc-item row items-center justify-between no-wrap q-pa-sm"
       >
-        <div class="row items-center no-wrap min-w-0 q-mr-sm">
+        <div class="row items-center no-wrap min-w-0 q-mr-sm col">
           <div class="pdf-icon-box q-mr-sm shrink-0">
             <q-icon name="description" size="18px" color="negative" />
           </div>

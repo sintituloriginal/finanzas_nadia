@@ -266,20 +266,20 @@
                   />
                 </div>
 
-                <div class="column q-gutter-y-xs">
+                <div class="docs-mini-list column q-gutter-y-xs">
                   <div
                     v-for="doc in getVenueDocs(item.id).slice(0, 2)"
                     :key="doc.id"
-                    class="doc-mini-pill row items-center justify-between no-wrap q-px-sm q-py-xs"
+                    class="doc-mini-pill"
                   >
-                    <div class="row items-center no-wrap min-w-0 q-mr-xs">
-                      <q-icon name="description" size="13px" color="negative" class="q-mr-xs shrink-0" />
-                      <span class="ellipsis text-caption title-ellipsis">
+                    <div class="doc-info">
+                      <q-icon name="description" size="14px" color="negative" class="shrink-0" />
+                      <span class="ellipsis doc-name">
                         {{ doc.display_name || doc.original_filename }}
                       </span>
                       <q-tooltip>{{ doc.display_name || doc.original_filename }} ({{ formatFileSize(doc.file_size) }})</q-tooltip>
                     </div>
-                    <div class="row items-center q-gutter-x-xs shrink-0">
+                    <div class="doc-actions shrink-0">
                       <q-btn
                         flat
                         round
@@ -287,10 +287,11 @@
                         size="xs"
                         icon="visibility"
                         color="primary"
+                        class="doc-action-btn"
                         aria-label="Ver PDF"
                         @click.stop="viewDoc(doc)"
                       >
-                        <q-tooltip>Ver</q-tooltip>
+                        <q-tooltip>Ver PDF</q-tooltip>
                       </q-btn>
                       <q-btn
                         flat
@@ -298,11 +299,11 @@
                         dense
                         size="xs"
                         icon="download"
-                        class="text-secondary-ink"
+                        class="text-secondary-ink doc-action-btn"
                         aria-label="Descargar PDF"
                         @click.stop="downloadDoc(doc)"
                       >
-                        <q-tooltip>Descargar</q-tooltip>
+                        <q-tooltip>Descargar PDF</q-tooltip>
                       </q-btn>
                     </div>
                   </div>
@@ -1084,20 +1085,24 @@ onMounted(() => {
 .venue-media-box {
   position: relative;
   width: 100%;
-  height: 180px;
-  background-color: var(--bg-surface-elevated);
+  height: 200px;
+  background-color: var(--bg-surface-subtle, #f1f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
 .venue-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   transition: transform 0.25s ease;
 }
 
 .venue-card:hover .venue-img {
-  transform: scale(1.03);
+  transform: scale(1.02);
 }
 
 .media-overlay-top {
@@ -1108,6 +1113,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.media-overlay-top > * {
+  pointer-events: auto;
 }
 
 .type-badge {
@@ -1172,18 +1183,61 @@ onMounted(() => {
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--border-soft);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.docs-mini-list {
+  width: 100%;
 }
 
 .doc-mini-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
+  padding: 4px 6px 4px 8px;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.title-ellipsis {
+.doc-info {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 0%;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.doc-name {
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  display: block;
+}
+
+.doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.doc-action-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
 }
 
 .border-top {
@@ -1308,6 +1362,10 @@ onMounted(() => {
 }
 
 @media (max-width: 599px) {
+  .venue-media-box {
+    height: 190px;
+  }
+
   .form-grid-2 {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -1315,6 +1373,12 @@ onMounted(() => {
 
   .toggle-placeholder-label {
     display: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .venue-media-box {
+    height: 170px;
   }
 }
 
