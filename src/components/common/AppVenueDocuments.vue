@@ -13,7 +13,7 @@
           class="q-ml-xs text-weight-bold"
           rounded
         >
-          {{ venueDocs.length }}
+          {{ totalDocsCount }}
         </q-badge>
       </div>
 
@@ -38,11 +38,9 @@
           label="Adjuntar PDF"
           class="attach-btn"
           :loading="isUploading"
-          :disable="isUploading || !venueId"
+          :disable="isUploading"
           @click="triggerFileSelect"
-        >
-          <q-tooltip v-if="!venueId">Guarda el lugar antes de adjuntar documentos</q-tooltip>
-        </q-btn>
+        />
       </div>
     </div>
 
@@ -52,8 +50,9 @@
       <span class="text-caption text-secondary-ink">Subiendo documento PDF de forma segura...</span>
     </div>
 
-    <!-- Lista de documentos -->
-    <div v-if="venueDocs.length > 0" class="docs-list column q-gutter-y-xs">
+    <!-- Lista de documentos (persistidos y pendientes) -->
+    <div v-if="totalDocsCount > 0" class="docs-list column q-gutter-y-xs">
+      <!-- 1. Documentos ya persistidos en Supabase / Store -->
       <div
         v-for="doc in venueDocs"
         :key="doc.id"
@@ -121,6 +120,46 @@
           </q-btn>
         </div>
       </div>
+
+      <!-- 2. Documentos encolados pendientes de guardar al crear el recinto -->
+      <div
+        v-for="pDoc in pendingFiles"
+        :key="pDoc.tempId"
+        class="doc-item-card pending-doc-item row items-center justify-between no-wrap q-pa-sm"
+      >
+        <div class="row items-center no-wrap min-w-0 q-mr-sm">
+          <div class="pdf-icon-box q-mr-sm shrink-0">
+            <q-icon name="description" size="18px" color="negative" />
+          </div>
+          <div class="column min-w-0">
+            <div class="text-caption text-weight-bold ellipsis text-secondary-ink title-text">
+              {{ pDoc.displayName }}
+              <q-tooltip>{{ pDoc.displayName }}</q-tooltip>
+            </div>
+            <div class="text-caption text-muted row items-center no-wrap font-mono meta-text">
+              <span>{{ formatFileSize(pDoc.fileSize) }}</span>
+              <span class="dot-separator">•</span>
+              <q-badge color="amber-8" text-color="white" label="Pendiente de guardar" rounded class="text-weight-medium" />
+            </div>
+          </div>
+        </div>
+
+        <div class="row items-center no-wrap shrink-0">
+          <q-btn
+            flat
+            round
+            dense
+            size="sm"
+            icon="close"
+            color="negative"
+            class="action-icon-btn"
+            aria-label="Quitar archivo pendiente"
+            @click.stop="removePendingDoc(pDoc.tempId)"
+          >
+            <q-tooltip>Quitar archivo</q-tooltip>
+          </q-btn>
+        </div>
+      </div>
     </div>
 
     <!-- Estado vacío -->
@@ -140,12 +179,21 @@ import { usePlacesStore } from '@/stores/places'
 import { formatFileSize } from '@/utils/format'
 import type { WeddingVenueDocument } from '@/types/places'
 
+interface PendingDocument {
+  tempId: string
+  file: File
+  displayName: string
+  fileSize: number
+}
+
 const props = withDefaults(
   defineProps<{
     venueId?: string
+    isNew?: boolean
     editable?: boolean
   }>(),
   {
+    isNew: false,
     editable: false
   }
 )
@@ -159,10 +207,14 @@ const isUploading = ref(false)
 const activeActionId = ref<string | null>(null)
 const actionType = ref<'view' | 'download' | null>(null)
 
+const pendingFiles = ref<PendingDocument[]>([])
+
 const venueDocs = computed(() => {
   if (!props.venueId) return []
   return placesStore.venueDocuments.filter((d) => d.wedding_venue_id === props.venueId)
 })
+
+const totalDocsCount = computed(() => venueDocs.value.length + pendingFiles.value.length)
 
 function triggerFileSelect() {
   if (fileInputRef.value) {
@@ -171,7 +223,7 @@ function triggerFileSelect() {
 }
 
 async function handleFilePicked(file: File | null) {
-  if (!file || !props.venueId) return
+  if (!file) return
 
   // Diálogo para ingresar un nombre descriptivo opcional
   $q.dialog({
@@ -184,14 +236,34 @@ async function handleFilePicked(file: File | null) {
       dense: true
     },
     cancel: { label: 'Cancelar', flat: true, noCaps: true },
-    ok: { label: 'Subir PDF', color: 'primary', unelevated: true, noCaps: true }
+    ok: { label: 'Adjuntar PDF', color: 'primary', unelevated: true, noCaps: true }
   }).onOk(async (displayName: string) => {
+    const finalDisplayName = displayName?.trim() || file.name
+
+    // 1. Si estamos creando un nuevo recinto, encolamos el archivo localmente
+    // para subirlo tras la creación exitosa del recinto en la base de datos
+    if (props.isNew || !props.venueId) {
+      pendingFiles.value.push({
+        tempId: 'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        file,
+        displayName: finalDisplayName,
+        fileSize: file.size
+      })
+      $q.notify({
+        type: 'info',
+        message: 'PDF preparado. Se guardará al crear el recinto.'
+      })
+      selectedFile.value = null
+      return
+    }
+
+    // 2. Si el recinto ya existe en la base de datos, subimos directamente
     isUploading.value = true
     try {
       await placesStore.uploadVenueDocument(
-        props.venueId!,
+        props.venueId,
         file,
-        displayName || file.name
+        finalDisplayName
       )
       $q.notify({
         type: 'positive',
@@ -210,6 +282,33 @@ async function handleFilePicked(file: File | null) {
     selectedFile.value = null
   })
 }
+
+function removePendingDoc(tempId: string) {
+  pendingFiles.value = pendingFiles.value.filter((p) => p.tempId !== tempId)
+}
+
+async function uploadPending(persistedVenueId: string): Promise<void> {
+  if (pendingFiles.value.length === 0) return
+  isUploading.value = true
+  try {
+    for (const item of pendingFiles.value) {
+      await placesStore.uploadVenueDocument(persistedVenueId, item.file, item.displayName)
+    }
+    pendingFiles.value = []
+  } finally {
+    isUploading.value = false
+  }
+}
+
+function clearPending() {
+  pendingFiles.value = []
+}
+
+defineExpose({
+  uploadPending,
+  clearPending,
+  hasPendingFiles: computed(() => pendingFiles.value.length > 0)
+})
 
 function handleFileRejected() {
   $q.notify({

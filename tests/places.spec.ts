@@ -206,8 +206,9 @@ describe('Módulos Viviendas y Lugares de Matrimonio', () => {
       expect(store.venueDocuments.length).toBeGreaterThan(0)
     })
 
-    it('debe adjuntar un archivo PDF válido con metadatos completos', async () => {
+    it('debe adjuntar un archivo PDF válido con metadatos completos a un recinto propio', async () => {
       const store = usePlacesStore()
+      await store.fetchWeddingVenues()
       await store.fetchVenueDocuments()
       const initialCount = store.venueDocuments.length
 
@@ -228,6 +229,120 @@ describe('Módulos Viviendas y Lugares de Matrimonio', () => {
       expect(doc.mime_type).toBe('application/pdf')
       expect(doc.file_size).toBe(pdfFile.size)
       expect(store.venueDocuments.length).toBe(initialCount + 1)
+    })
+
+    it('debe rechazar documento para un recinto que pertenece a otro usuario', async () => {
+      const store = usePlacesStore()
+      await store.fetchWeddingVenues()
+
+      // Inyectar un recinto de otro usuario ajeno
+      store.weddingVenues.push({
+        id: 'venue-other-user',
+        user_id: '99999999-9999-9999-9999-999999999999',
+        name: 'Recinto de Otro Usuario',
+        venue_type: 'event_center',
+        image_url: null,
+        address: null,
+        commune: null,
+        region: null,
+        price: 5000000,
+        price_type: 'total',
+        capacity: 150,
+        services: null,
+        source_url: null,
+        contact_phone: null,
+        target_date: null,
+        notes: null,
+        status: 'to_review',
+        is_favorite: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+      const pdfFile = new File(['%PDF-1.4 dummy content'], 'hack_doc.pdf', {
+        type: 'application/pdf'
+      })
+
+      await expect(
+        store.uploadVenueDocument('venue-other-user', pdfFile, 'Intento ajeno')
+      ).rejects.toThrow(/Permiso denegado: el recinto pertenece a otro usuario/)
+    })
+
+    it('debe rechazar documento para un recinto que aún no ha sido guardado', async () => {
+      const store = usePlacesStore()
+      await store.fetchWeddingVenues()
+
+      const pdfFile = new File(['%PDF-1.4 dummy content'], 'doc_huerfano.pdf', {
+        type: 'application/pdf'
+      })
+
+      await expect(
+        store.uploadVenueDocument('unregistered-venue-id-123', pdfFile)
+      ).rejects.toThrow(/El recinto aún no ha sido guardado/)
+    })
+
+    it('debe permitir guardar documento después de crear un nuevo recinto', async () => {
+      const store = usePlacesStore()
+      await store.fetchWeddingVenues()
+      await store.fetchVenueDocuments()
+
+      // 1. Crear el nuevo recinto primero
+      const newVenue = await store.createWeddingVenue({
+        name: 'Casona Valle Hermoso',
+        venue_type: 'event_center',
+        image_url: null,
+        address: 'Camino La Aurora 100',
+        commune: 'Curacaví',
+        region: 'RM',
+        price: 3500000,
+        price_type: 'total',
+        capacity: 200,
+        services: 'Banquetería y DJ',
+        source_url: null,
+        contact_phone: '+56911223344',
+        target_date: '2027-11-20',
+        notes: 'Espacio campestre',
+        status: 'interested',
+        is_favorite: false
+      })
+
+      expect(newVenue.id).toBeDefined()
+
+      // 2. Adjuntar el documento PDF al recinto recién creado y persistido
+      const pdfFile = new File(['%PDF-1.4 presupuesto'], 'Propuesta_Valle_Hermoso.pdf', {
+        type: 'application/pdf'
+      })
+
+      const doc = await store.uploadVenueDocument(
+        newVenue.id,
+        pdfFile,
+        'Cotización inicial'
+      )
+
+      expect(doc.id).toBeDefined()
+      expect(doc.wedding_venue_id).toBe(newVenue.id)
+      expect(store.venueDocuments.some((d) => d.id === doc.id)).toBe(true)
+    })
+
+    it('debe adjuntar documento al editar un recinto existente', async () => {
+      const store = usePlacesStore()
+      await store.fetchWeddingVenues()
+      await store.fetchVenueDocuments()
+      const existingVenue = store.weddingVenues[0]
+
+      const pdfFile = new File(['%PDF-1.4 anexo'], 'Anexo_Menu_Vegetariano.pdf', {
+        type: 'application/pdf'
+      })
+
+      const doc = await store.uploadVenueDocument(
+        existingVenue.id,
+        pdfFile,
+        'Anexo menú especial'
+      )
+
+      expect(doc.id).toBeDefined()
+      expect(doc.wedding_venue_id).toBe(existingVenue.id)
+      expect(doc.display_name).toBe('Anexo menú especial')
     })
 
     it('debe rechazar documentos que no sean PDF', async () => {

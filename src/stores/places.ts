@@ -220,6 +220,24 @@ export const usePlacesStore = defineStore('places', () => {
   }
 
   // ---------------------------------------------------------------------------
+  // Helper: Resolución segura del usuario autenticado (evita DEMO_USER_ID en nube)
+  // ---------------------------------------------------------------------------
+  async function resolveAuthUserId(): Promise<string> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error: authErr } = await supabase.auth.getUser()
+      if (authErr || !data.user) {
+        throw new Error('Sesión de usuario no válida o expirada. Inicia sesión nuevamente.')
+      }
+      if (authStore.user && authStore.user.id !== data.user.id) {
+        authStore.user.id = data.user.id
+        authStore.user.email = data.user.email ?? authStore.user.email
+      }
+      return data.user.id
+    }
+    return authStore.user?.id || DEMO_USER_ID
+  }
+
+  // ---------------------------------------------------------------------------
   // Properties CRUD
   // ---------------------------------------------------------------------------
   async function fetchProperties() {
@@ -252,7 +270,7 @@ export const usePlacesStore = defineStore('places', () => {
     loading.value = true
     error.value = null
     try {
-      const currentUserId = authStore.user?.id || DEMO_USER_ID
+      const currentUserId = await resolveAuthUserId()
       const nowIso = new Date().toISOString()
       const newId = generateUUID()
 
@@ -421,7 +439,7 @@ export const usePlacesStore = defineStore('places', () => {
     loading.value = true
     error.value = null
     try {
-      const currentUserId = authStore.user?.id || DEMO_USER_ID
+      const currentUserId = await resolveAuthUserId()
       const nowIso = new Date().toISOString()
       const newId = item.id || generateUUID()
 
@@ -620,26 +638,76 @@ export const usePlacesStore = defineStore('places', () => {
     loading.value = true
     error.value = null
 
-    const currentUserId = authStore.user?.id || DEMO_USER_ID
-    const docId = generateUUID()
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const filePath = `${currentUserId}/${venueId}/${docId}_${sanitizedName}`
-    const nowIso = new Date().toISOString()
-
-    const newRecord: WeddingVenueDocument = {
-      id: docId,
-      user_id: currentUserId,
-      wedding_venue_id: venueId,
-      original_filename: file.name,
-      display_name: displayName?.trim() || file.name,
-      storage_path: filePath,
-      mime_type: 'application/pdf',
-      file_size: file.size,
-      created_at: nowIso,
-      updated_at: nowIso
-    }
-
     try {
+      const currentUserId = await resolveAuthUserId()
+
+      // Trazabilidad temporal controlada (segura y sin secretos)
+      console.debug('[Trace uploadVenueDocument:start]', {
+        timestamp: new Date().toISOString(),
+        authUserId: currentUserId,
+        venueId,
+        fileName: file.name,
+        fileSize: file.size
+      })
+
+      // 1. Verificación previa de existencia y propiedad del recinto
+      if (isSupabaseConfigured && supabase) {
+        const { data, error: venueErr } = await supabase
+          .from('wedding_venues')
+          .select('id, user_id')
+          .eq('id', venueId)
+          .maybeSingle()
+
+        const venue = data as { id: string; user_id: string } | null
+
+        if (venueErr) {
+          console.error('[Trace uploadVenueDocument:venue_query_error]', venueErr)
+          throw new Error(`Error al verificar recinto: ${venueErr.message}`)
+        }
+
+        if (!venue) {
+          console.warn('[Trace uploadVenueDocument:venue_not_found]', { venueId, authUserId: currentUserId })
+          throw new Error('El recinto aún no ha sido guardado. Guarda el recinto antes de adjuntar documentos.')
+        }
+
+        if (venue.user_id !== currentUserId) {
+          console.warn('[Trace uploadVenueDocument:owner_mismatch]', {
+            venueOwner: venue.user_id,
+            requestUser: currentUserId
+          })
+          throw new Error('Permiso denegado: el recinto pertenece a otro usuario.')
+        }
+      } else {
+        if (weddingVenues.value.length === 0) {
+          weddingVenues.value = loadLocalVenues()
+        }
+        const localVenue = weddingVenues.value.find((v) => v.id === venueId)
+        if (!localVenue) {
+          throw new Error('El recinto aún no ha sido guardado. Guarda el recinto antes de adjuntar documentos.')
+        }
+        if (localVenue.user_id !== currentUserId) {
+          throw new Error('Permiso denegado: el recinto pertenece a otro usuario.')
+        }
+      }
+
+      const docId = generateUUID()
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const filePath = `${currentUserId}/${venueId}/${docId}_${sanitizedName}`
+      const nowIso = new Date().toISOString()
+
+      const newRecord: WeddingVenueDocument = {
+        id: docId,
+        user_id: currentUserId,
+        wedding_venue_id: venueId,
+        original_filename: file.name,
+        display_name: displayName?.trim() || file.name,
+        storage_path: filePath,
+        mime_type: 'application/pdf',
+        file_size: file.size,
+        created_at: nowIso,
+        updated_at: nowIso
+      }
+
       if (isSupabaseConfigured && supabase && authStore.user) {
         // A) Subir al bucket privado
         const { error: uploadErr } = await supabase.storage
@@ -651,6 +719,7 @@ export const usePlacesStore = defineStore('places', () => {
           })
 
         if (uploadErr) {
+          console.error('[Trace uploadVenueDocument:storage_upload_error]', uploadErr)
           throw new Error(`Error al subir archivo a Storage: ${uploadErr.message}`)
         }
 
@@ -671,11 +740,13 @@ export const usePlacesStore = defineStore('places', () => {
           .single()
 
         if (dbErr) {
+          console.error('[Trace uploadVenueDocument:db_insert_error]', dbErr)
           // Mecanismo de compensación: borrar archivo huérfano de storage
           await supabase.storage.from('wedding-venue-documents').remove([filePath])
           throw new Error(`Error al registrar documento: ${dbErr.message}`)
         }
 
+        console.debug('[Trace uploadVenueDocument:success]', { docId: newRecord.id, venueId })
         const created = dbData as WeddingVenueDocument
         venueDocuments.value = [created, ...venueDocuments.value]
         return created

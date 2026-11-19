@@ -555,7 +555,9 @@
           <!-- 5. Documentos adjuntos (PDFs) -->
           <div class="form-section">
             <AppVenueDocuments
-              :venue-id="currentVenueId"
+              ref="venueDocsRef"
+              :venue-id="editingId || undefined"
+              :is-new="!editingId"
               :editable="true"
             />
           </div>
@@ -948,8 +950,7 @@ const dialogOpen = ref(false)
 const editingId = ref<string | null>(null)
 const pendingVenueId = ref<string>('')
 const isSubmitting = ref(false)
-
-const currentVenueId = computed(() => editingId.value || pendingVenueId.value)
+const venueDocsRef = ref<InstanceType<typeof AppVenueDocuments> | null>(null)
 
 const form = reactive({
   name: '',
@@ -971,6 +972,9 @@ const form = reactive({
 })
 
 function openDialog(item?: WeddingVenue) {
+  if (venueDocsRef.value) {
+    venueDocsRef.value.clearPending()
+  }
   if (item) {
     editingId.value = item.id
     pendingVenueId.value = item.id
@@ -1043,7 +1047,10 @@ async function saveForm() {
       await placesStore.updateWeddingVenue(editingId.value, payload)
       $q.notify({ type: 'positive', message: 'Lugar actualizado correctamente' })
     } else {
-      await placesStore.createWeddingVenue(payload)
+      const createdVenue = await placesStore.createWeddingVenue(payload)
+      if (venueDocsRef.value?.hasPendingFiles) {
+        await venueDocsRef.value.uploadPending(createdVenue.id)
+      }
       $q.notify({ type: 'positive', message: 'Lugar guardado correctamente' })
     }
     dialogOpen.value = false
